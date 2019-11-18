@@ -1,5 +1,7 @@
 #include "chams.h"
 
+#include "lagcomp.h"
+
 #include "../Utils/xorstring.h"
 #include "../Utils/entity.h"
 #include "../settings.h"
@@ -24,6 +26,8 @@ IMaterial* materialChams;
 IMaterial* materialChamsIgnorez;
 IMaterial* materialChamsFlat;
 IMaterial* materialChamsFlatIgnorez;
+IMaterial* materialChamsCrystal;
+IMaterial* materialChamsGold;
 IMaterial* materialChamsArms;
 IMaterial* materialChamsWeapons;
 
@@ -122,6 +126,33 @@ static void DrawPlayer(void* thisptr, void* context, void *state, const ModelRen
 	// No need to call DME again, it already gets called in DrawModelExecute.cpp
 }
 
+static void DrawRecord(void* thisptr, void* context, void *state, const ModelRenderInfo_t &pInfo, matrix3x4_t* pCustomBoneToWorld)
+{
+	if (!Settings::LagComp::enabled)
+        return;
+
+    C_BasePlayer* localplayer = (C_BasePlayer*) entityList->GetClientEntity(engine->GetLocalPlayer());
+	if (!localplayer)
+		return;
+	if (LagComp::ticks.empty())
+		return;
+
+ 	IMaterial* visible_material = materialChams;
+ 	Color visColor = Color(255, 0, 0, 255);
+ 	visible_material->ColorModulate(visColor);
+ 	visible_material->AlphaModulate(1.0f);
+	auto &tick = LagComp::ticks.back();
+	for (auto &record : tick.records)
+	{
+		if (!record.boneMatrix)
+			continue;
+
+		(Vector)pInfo.origin = record.origin;
+		modelRender->ForcedMaterialOverride(visible_material);
+		modelRenderVMT->GetOriginalMethod<DrawModelExecuteFn>(21)(thisptr, context, state, pInfo, (matrix3x4_t*)record.boneMatrix);
+	}
+}
+
 static void DrawWeapon(const ModelRenderInfo_t& pInfo)
 {
 	if (!Settings::ESP::Chams::Weapon::enabled)
@@ -158,6 +189,26 @@ static void DrawArms(const ModelRenderInfo_t& pInfo)
 	mat->SetMaterialVarFlag(MATERIAL_VAR_WIREFRAME, Settings::ESP::Chams::Arms::type == ArmsType::WIREFRAME);
 	mat->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, Settings::ESP::Chams::Arms::type == ArmsType::NONE);
 	modelRender->ForcedMaterialOverride(mat);
+
+	switch (Settings::ESP::Chams::Arms::type)
+	{
+		default:
+			break;
+		case ArmsType::DEFAULT:
+			mat->AlphaModulate(1.0f);
+			mat->ColorModulate(Settings::ESP::Chams::Arms::color.Color());
+			break;
+			case ArmsType::CRYSTAL:
+			mat = material->FindMaterial("models/inventory_items/trophy_majors/crystal_clear", TEXTURE_GROUP_OTHER);
+			mat->AlphaModulate(0.6f);
+			mat->ColorModulate(Settings::ESP::Chams::Arms::color.Color());
+			break;
+			case ArmsType::GOLD:
+			mat = material->FindMaterial("models/inventory_items/trophy_majors/gold", TEXTURE_GROUP_OTHER);
+			mat->AlphaModulate(0.7f);
+			mat->ColorModulate(Settings::ESP::Chams::Arms::color.Color());
+			break;
+	}
 }
 
 void Chams::DrawModelExecute(void* thisptr, void* context, void *state, const ModelRenderInfo_t &pInfo, matrix3x4_t* pCustomBoneToWorld)
@@ -178,6 +229,8 @@ void Chams::DrawModelExecute(void* thisptr, void* context, void *state, const Mo
 		materialChamsIgnorez = Util::CreateMaterial(XORSTR("VertexLitGeneric"), XORSTR("VGUI/white_additive"), true, true, true, true, true);
 		materialChamsFlat = Util::CreateMaterial(XORSTR("UnlitGeneric"), XORSTR("VGUI/white_additive"), false, true, true, true, true);
 		materialChamsFlatIgnorez = Util::CreateMaterial(XORSTR("UnlitGeneric"), XORSTR("VGUI/white_additive"), true, true, true, true, true);
+		materialChamsCrystal = material->FindMaterial("models/inventory_items/trophy_majors/crystal_clear",TEXTURE_GROUP_OTHER);
+		materialChamsGold = material->FindMaterial("models/inventory_items/trophy_majors/gold",TEXTURE_GROUP_OTHER);
 		materialChamsArms = Util::CreateMaterial(XORSTR("VertexLitGeneric"), XORSTR("VGUI/white_additive"), false, true, true, true, true);
 		materialChamsWeapons = Util::CreateMaterial(XORSTR("VertexLitGeneric"), XORSTR("VGUI/white_additive"), false, true, true, true, true);
 		materialsCreated = true;
@@ -185,8 +238,9 @@ void Chams::DrawModelExecute(void* thisptr, void* context, void *state, const Mo
 
 	std::string modelName = modelInfo->GetModelName(pInfo.pModel);
 
-	if (modelName.find(XORSTR("models/player")) != std::string::npos)
+		if (modelName.find(XORSTR("models/player")) != std::string::npos){
 		DrawPlayer(thisptr, context, state, pInfo, pCustomBoneToWorld);
+		}
 	else if (modelName.find(XORSTR("arms")) != std::string::npos)
 		DrawArms(pInfo);
 	else if (modelName.find(XORSTR("weapon")) != std::string::npos)

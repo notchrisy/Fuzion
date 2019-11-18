@@ -56,6 +56,8 @@ enum class ChamsType : int
 	CHAMS_XQZ,
 	CHAMS_FLAT,
 	CHAMS_FLAT_XQZ,
+	CHAMS_CRYSTAL,
+	CHAMS_GOLD,
 };
 
 enum class BoxType : int
@@ -113,6 +115,9 @@ enum class TeamColorType : int
 enum class ArmsType : int
 {
 	DEFAULT,
+	CRYSTAL,
+	GOLD,
+	
 	WIREFRAME,
 	NONE,
 };
@@ -777,6 +782,11 @@ namespace Settings
 			extern float size;
 		}
 
+		namespace backtrack
+		{
+			extern bool enabled;
+		}
+
 		namespace Spread
 		{
 			extern bool enabled; // show current spread
@@ -892,6 +902,11 @@ namespace Settings
 	}
 
 	namespace NoDuckCooldown
+	{
+		extern bool enabled;
+	}
+
+	namespace LagComp
 	{
 		extern bool enabled;
 	}
@@ -1099,6 +1114,20 @@ namespace Settings
 		extern ButtonCode_t key;
 	}
 
+	namespace ProfileChanger
+	{
+		extern int coinID;
+		extern int musicID;
+		extern int compRank;
+		extern int weaponStatus;
+		extern int weaponRarity;
+	}
+
+	namespace DoorSpam
+	{
+		extern bool enabled;
+	}
+
 	namespace NoFall
 	{
 		extern bool enabled;
@@ -1152,6 +1181,10 @@ namespace Settings
  			extern bool allies;
  		}
  	}
+	namespace QuickSwitch
+	{
+		extern bool enabled;
+	}
 	namespace AngleIndicator
 	{
 		extern bool enabled;
